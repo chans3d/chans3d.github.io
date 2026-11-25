@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>게임 시연 피드백</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: 한 열의 작업대. 위쪽 탭 4개(내 게임 / 피드백 / 결과 / 전체), 아래는 카드 하나씩. */
+:root {
+  --bg: #f5f4fb; --surface: #ffffff; --surface2: #ecebf7; --line: #dcd9ef;
+  --fg: #1f1b3a; --muted: #625e82; --accent: #6c4cf1; --accent-fg: #ffffff;
+  --gold: #e09a00; --gold-soft: #fff1cf; --teal: #138f84; --teal-soft: #d9f3f0;
+  --warn: #b4470f; --warn-soft: #fde6da;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "Space Grotesk", "Noto Sans KR", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12152e; --surface: #1b2047; --surface2: #252b5c; --line: #333a72;
+  --fg: #f1efff; --muted: #a9a6d1; --accent: #9b85ff; --accent-fg: #12152e;
+  --gold: #ffb83d; --gold-soft: #3b3115; --teal: #3fd6c7; --teal-soft: #143b3c;
+  --warn: #ff9a6b; --warn-soft: #43261c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #12152e; --surface: #1b2047; --surface2: #252b5c; --line: #333a72;
+  --fg: #f1efff; --muted: #a9a6d1; --accent: #9b85ff; --accent-fg: #12152e;
+  --gold: #ffb83d; --gold-soft: #3b3115; --teal: #3fd6c7; --teal-soft: #143b3c;
+  --warn: #ff9a6b; --warn-soft: #43261c; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; margin-bottom: 14px; }
+h1 { font-size: 26px; font-weight: 900; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); margin: 0 0 2px; }
+.status { font-size: 13px; color: var(--muted); }
+.status b { color: var(--fg); }
+.notice { background: var(--gold-soft); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 14px; }
+.notice[hidden] { display: none; }
+nav.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--surface2); padding: 5px; border-radius: 14px; margin-bottom: 16px; }
+nav.tabs button { border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px; padding: 10px 4px; border-radius: 10px; cursor: pointer; }
+nav.tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+.card h2 { font-size: 18px; margin: 0 0 4px; }
+.card .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 14px; }
+label.f { display: block; font-weight: 700; font-size: 14px; margin: 14px 0 6px; }
+label.f small { font-weight: 400; color: var(--muted); }
+input[type=text], textarea, select { width: 100%; background: var(--bg); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; }
+textarea { min-height: 64px; resize: vertical; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn { border: 0; background: var(--accent); color: var(--accent-fg); font: inherit; font-weight: 700; padding: 11px 18px; border-radius: 12px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+.msg { font-size: 13.5px; color: var(--teal); min-height: 20px; }
+.msg.err { color: var(--warn); }
+
+/* 1~5 점수 고르기 */
+.seg-grid { display: grid; gap: 8px; }
+.seg { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; }
+.seg .nm { font-weight: 700; font-size: 14px; }
+.seg .nm small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; line-height: 1.3; }
+.pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pick.six { grid-template-columns: repeat(5, 1fr) 1.3fr; }
+.pick button { border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); font-family: var(--font-num); font-weight: 700; font-size: 15px; padding: 8px 0; border-radius: 10px; cursor: pointer; }
+.pick button.na { font-family: var(--font-body); font-size: 12px; font-weight: 500; }
+.pick button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.scale-note { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+/* 게임 목록 */
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.game { text-align: left; border: 1.5px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 14px; padding: 12px 14px; cursor: pointer; font: inherit; min-width: 0; }
+.game[aria-pressed="true"] { border-color: var(--accent); background: var(--surface2); }
+.game .t { font-weight: 900; font-size: 15.5px; display: block; overflow-wrap: anywhere; }
+.game .m { color: var(--muted); font-size: 12.5px; display: block; }
+.game .chip { display: inline-block; margin-top: 6px; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px; background: var(--teal-soft); color: var(--teal); }
+.game .chip.todo { background: var(--gold-soft); color: var(--gold); }
+.empty { text-align: center; color: var(--muted); padding: 22px 10px; font-size: 14px; }
+
+/* 결과 */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0 14px; }
+.kpi { background: var(--bg); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.kpi .v { font-family: var(--font-num); font-size: 24px; font-weight: 700; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.chart-box { overflow-x: auto; }
+svg.curve { width: 100%; min-width: 480px; height: auto; display: block; }
+svg .grid { stroke: var(--line); }
+svg .ax { fill: var(--muted); font-size: 12px; font-family: var(--font-num); }
+svg .lab { fill: var(--fg); font-size: 13px; font-weight: 700; font-family: var(--font-body); }
+svg .intend { stroke: var(--gold); fill: none; stroke-width: 3; stroke-dasharray: 7 6; }
+svg .intend-dot { fill: var(--gold); }
+svg .avg { stroke: var(--accent); fill: none; stroke-width: 3.5; }
+svg .avg-dot { fill: var(--accent); }
+svg .band { fill: var(--accent); opacity: .12; }
+svg .val { fill: var(--accent); font-size: 12px; font-weight: 700; font-family: var(--font-num); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 22px; vertical-align: middle; margin-right: 6px; border-top: 3px solid; }
+.bars { display: grid; gap: 6px; margin-top: 6px; }
+.bar { display: grid; grid-template-columns: 90px 1fr 42px; gap: 8px; align-items: center; font-size: 13px; }
+.bar .track { background: var(--bg); border-radius: 6px; height: 14px; overflow: hidden; }
+.bar .fill { background: var(--warn); height: 100%; border-radius: 6px; }
+.bar .n { font-family: var(--font-num); font-weight: 700; text-align: right; }
+.insight { background: var(--surface2); border-radius: 12px; padding: 12px 14px; font-size: 14px; margin: 10px 0; }
+.insight b { color: var(--accent); }
+h3 { font-size: 15px; margin: 18px 0 6px; }
+ul.quotes { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+ul.quotes li { background: var(--bg); border-radius: 10px; padding: 8px 12px; font-size: 13.5px; overflow-wrap: anywhere; }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+th, td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+td.l { text-align: left; font-weight: 700; }
+td.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: var(--warn-soft); color: var(--warn); }
+@media (max-width: 560px) {
+  nav.tabs button { font-size: 12.5px; }
+  .seg { grid-template-columns: 1fr; gap: 4px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) { .pick button, .game, nav.tabs button { transition: background .12s, border-color .12s; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">게임학개론 · 플레이테스트</p>
+      <h1>게임 시연 피드백</h1>
+    </div>
+    <div class="status" id="status" aria-live="polite">연결하는 중…</div>
+  </header>
+  <div class="notice" id="notice" hidden></div>
+
+  <nav class="tabs" role="tablist" aria-label="화면 선택">
+    <button role="tab" id="t-mine" aria-selected="false" data-v="mine">내 게임 등록</button>
+    <button role="tab" id="t-rate" aria-selected="true" data-v="rate">피드백 남기기</button>
+    <button role="tab" id="t-res" aria-selected="false" data-v="res">결과 보기</button>
+    <button role="tab" id="t-all" aria-selected="false" data-v="all">전체 현황</button>
+  </nav>
+
+  <!-- 내 게임 등록 -->
+  <section id="v-mine" hidden>
+    <div class="card">
+      <h2>내 게임 등록</h2>
+      <p class="lead">시연할 게임을 등록하면 친구들이 목록에서 고르고 피드백을 남길 수 있습니다. 설계 의도 흥미 점수를 적어 두면 결과 화면에서 친구들의 실제 흥미 곡선과 비교됩니다.</p>
+      <label class="f" for="g-title">게임 제목</label>
+      <input type="text" id="g-title" maxlength="40" placeholder="예: 숫자 슬라이딩 퍼즐">
+      <label class="f" for="g-maker">만든 사람 <small>(이름 또는 별명)</small></label>
+      <input type="text" id="g-maker" maxlength="20" placeholder="예: 김인제">
+      <label class="f" for="g-pitch">한 줄 소개</label>
+      <input type="text" id="g-pitch" maxlength="80" placeholder="예: 빈칸 옆 타일을 밀어 숫자를 순서대로 맞추는 퍼즐">
+      <label class="f" for="g-exp">플레이어가 느꼈으면 하는 핵심 경험 <small>(친구들의 답과 비교됩니다)</small></label>
+      <input type="text" id="g-exp" maxlength="80" placeholder="예: 막혔다가 한 번에 풀리는 쾌감">
+      <label class="f">설계 의도 흥미 점수 <small>(구간별 1~5, 내가 의도한 곡선)</small></label>
+      <div class="seg-grid" id="g-curve"></div>
+      <div class="row">
+        <button class="btn" id="g-save">등록하기</button>
+        <span class="msg" id="g-msg" role="status"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 피드백 남기기 -->
+  <section id="v-rate">
+    <div class="card">
+      <h2>1. 플레이한 게임 고르기</h2>
+      <p class="lead">방금 시연을 본 게임을 고르세요. 이미 피드백을 남긴 게임은 "완료"로 표시되고, 다시 고르면 고칠 수 있습니다.</p>
+      <div class="games" id="r-games"></div>
+    </div>
+    <div class="card" id="r-form" hidden>
+      <h2 id="r-head">2. 피드백</h2>
+      <p class="lead" id="r-sub"></p>
+
+      <label class="f">구간별 흥미 <small>(1 지루함 ~ 5 몰입. 보지 못한 구간은 "못 봄")</small></label>
+      <div class="seg-grid" id="r-curve"></div>
+
+      <label class="f" for="r-stuck">처음 막히거나 헷갈린 곳은?</label>
+      <select id="r-stuck"></select>
+      <label class="f" for="r-why">막힌 이유 <small>(선택)</small></label>
+      <input type="text" id="r-why" maxlength="120" placeholder="예: 빈칸 옆이 아닌 타일을 눌러도 아무 반응이 없었다">
+
+      <label class="f">목표를 바로 이해할 수 있었나요?</label>
+      <div class="pick" id="r-goal"></div>
+      <div class="scale-note"><span>1 전혀 모르겠음</span><span>5 바로 알았음</span></div>
+
+      <label class="f">조작이 편했나요?</label>
+      <div class="pick" id="r-ctrl"></div>
+      <div class="scale-note"><span>1 불편함</span><span>5 아주 편함</span></div>
+
+      <label class="f">난이도는 어땠나요?</label>
+      <div class="pick" id="r-diff"></div>
+      <div class="scale-note"><span>1 너무 쉬움</span><span>3 적당함</span><span>5 너무 어려움</span></div>
+
+      <label class="f">다시 하고 싶나요?</label>
+      <div class="pick" id="r-again"></div>
+      <div class="scale-note"><span>1 아니요</span><span>5 꼭 다시 하고 싶음</span></div>
+
+      <label class="f" for="r-exp">이 게임은 어떤 경험이었나요? <small>(한 문장)</small></label>
+      <input type="text" id="r-exp" maxlength="80" placeholder="예: 시간에 쫓기며 길을 찾는 긴장감">
+      <label class="f" for="r-best">가장 재미있던 순간은?</label>
+      <input type="text" id="r-best" maxlength="120">
+      <label class="f" for="r-fix">한 가지만 고친다면?</label>
+      <input type="text" id="r-fix" maxlength="120">
+
+      <div class="row">
+        <button class="btn" id="r-save">피드백 보내기</button>
+        <span class="msg" id="r-msg" role="status"></span>
+      </div>
+      <p class="lead" style="margin:10px 0 0">피드백에는 이름이 표시되지 않습니다. 같은 기기에서 다시 보내면 이전 응답을 고칩니다. 만든 사람이 고칠 수 있도록 구체적으로 적어 주세요.</p>
+    </div>
+  </section>
+
+  <!-- 결과 보기 -->
+  <section id="v-res" hidden>
+    <div class="card">
+      <h2>게임 고르기</h2>
+      <select id="s-game" aria-label="결과를 볼 게임"></select>
+    </div>
+    <div id="s-body"></div>
+  </section>
+
+  <!-- 전체 현황 -->
+  <section id="v-all" hidden>
+    <div class="card">
+      <h2>전체 현황</h2>
+      <p class="lead">등록된 게임별 응답 수와 주요 지표입니다. 응답 원본은 구글 시트에 저장됩니다. "우선 수정" 표시는 응답자의 절반 이상이 같은 구간에서 막힌 경우입니다.</p>
+      <div class="tbl-wrap" id="a-table"></div>
+      <div class="row" id="a-tools">
+        <button class="btn ghost" id="a-copy">표 복사</button>
+        <button class="btn ghost" id="a-refresh">새로 고침</button>
+                <span class="msg" id="a-msg" role="status"></span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const SEGS = [
+  { k: "훅", d: "첫인상" }, { k: "상승", d: "도전 시작" }, { k: "휴식", d: "숨 고르기" },
+  { k: "상승", d: "더 어려움" }, { k: "절정", d: "가장 큰 순간" }, { k: "결말", d: "마무리" }
+];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (v) => (Number.isInteger(v) && v >= 1 && v <= 5 ? v : 0);
+
+/* ---------- 상태 ---------- */
+const S = {
+  mode: "loading",        // loading | shared | local
+  me: null,               // 공유 모드의 내 id
+  owner: false,
+  games: {},              // id -> {title, maker, pitch, exp, intended[6], at}
+  fb: {},                 // testerId -> { r: { gameId: response } }
+  rateGame: null,
+  resGame: null,
+  draft: null,
+  view: "rate"
+};
+const writeChain = {};
+
+/* ---------- 설정: 구글 Apps Script 웹 앱 주소를 따옴표 안에 붙여 넣으세요 ---------- */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxDwfQ3YAnub9BVyhuqIBFmDEDgXvToc_ldILF-kj9xqLV4NSIvyYdJA42G_eiqPhmH/exec";
+
+/* ---------- 저장소 ---------- */
+const LKEY = "demo-feedback-local-v1";
+const ID_KEY = "demo-feedback-ids-v1";
+function rid() { const a = new Uint8Array(12); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach((_, i) => { a[i] = Math.random() * 256; }); return Array.from(a, (b) => (b % 36).toString(36)).join(""); }
+const IDS = (() => {
+  let v = null;
+  try { v = JSON.parse(localStorage.getItem(ID_KEY) || "null"); } catch (e) { v = null; }
+  if (!v || !v.tid || !v.gid || !v.key) { v = { tid: rid(), gid: rid(), key: rid() }; try { localStorage.setItem(ID_KEY, JSON.stringify(v)); } catch (e) { /* 이 창에서만 유지 */ } }
+  return v;
+})();
+function loadLocal() {
+  try { const d = JSON.parse(localStorage.getItem(LKEY) || "{}"); return { games: d.games || {}, fb: d.fb || {} }; } catch (e) { return { games: {}, fb: {} }; }
+}
+function saveLocal() {
+  try { localStorage.setItem(LKEY, JSON.stringify({ games: S.games, fb: S.fb })); return true; } catch (e) { return false; }
+}
+function myGameId() { return S.mode === "shared" ? IDS.gid : "local-mine"; }
+function myTesterId() { return S.mode === "shared" ? IDS.tid : "local-" + localTester; }
+let localTester = 1;
+
+async function post(body) {
+  let res;
+  try {
+    res = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+  } catch (e) { throw { code: "network" }; }
+  let j = null;
+  try { j = await res.json(); } catch (e) { throw { code: "network" }; }
+  if (!j || !j.ok) throw { code: (j && j.error) || "server_error" };
+}
+async function saveGame(data) {
+  if (S.mode === "shared") {
+    await post(Object.assign({ type: "game", id: IDS.gid, key: IDS.key }, data));
+    S.games[IDS.gid] = data; render(); refresh(); return;
+  }
+  S.games[myGameId()] = data; if (!saveLocal()) throw { code: "local" }; render();
+}
+async function saveResponse(gameId, resp) {
+  const tid = myTesterId();
+  const cur = (S.fb[tid] && S.fb[tid].r) || {};
+  const r = Object.assign({}, cur, { [gameId]: resp });
+  if (S.mode === "shared") {
+    await post(Object.assign({ type: "response", gameId, tid }, resp));
+    S.fb[tid] = { r }; render(); refresh(); return;
+  }
+  S.fb[tid] = { r }; if (!saveLocal()) throw { code: "local" }; render();
+}
+function errText(e) {
+  const c = e && e.code;
+  if (c === "network") return "보내지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.";
+  if (c === "not_owner") return "이 게임을 등록한 기기에서만 고칠 수 있습니다.";
+  if (c === "bad_request") return "입력 내용을 확인해 주세요. 제목과 이름은 꼭 필요합니다.";
+  if (c === "local") return "이 브라우저에 저장하지 못했습니다. 개인 정보 보호 모드인지 확인해 주세요.";
+  return "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+/* ---------- 집계 ---------- */
+function responsesFor(gid) {
+  const out = [];
+  for (const tid of Object.keys(S.fb)) {
+    const r = S.fb[tid] && S.fb[tid].r && S.fb[tid].r[gid];
+    if (r && typeof r === "object") out.push(Object.assign({ tid }, r));
+  }
+  return out;
+}
+function avg(arr) { const v = arr.filter((x) => x > 0); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function stats(gid) {
+  const rs = responsesFor(gid);
+  const seg = SEGS.map((_, i) => {
+    const vals = rs.map((r) => clamp((r.curve || [])[i])).filter((x) => x > 0);
+    return { avg: avg(vals), min: vals.length ? Math.min(...vals) : null, max: vals.length ? Math.max(...vals) : null, n: vals.length };
+  });
+  const stuck = SEGS.map((_, i) => rs.filter((r) => r.stuck === i).length);
+  const noneStuck = rs.filter((r) => r.stuck === -1).length;
+  return {
+    n: rs.length, rs, seg, stuck, noneStuck,
+    goal: avg(rs.map((r) => clamp(r.goal))), ctrl: avg(rs.map((r) => clamp(r.ctrl))),
+    diff: avg(rs.map((r) => clamp(r.diff))), again: avg(rs.map((r) => clamp(r.again)))
+  };
+}
+const f1 = (v) => (v === null ? "-" : v.toFixed(1));
+
+/* ---------- 공통: 1~5 고르기 ---------- */
+function picker(el, val, onPick, withNA) {
+  el.className = "pick" + (withNA ? " six" : "");
+  el.innerHTML = [1, 2, 3, 4, 5].map((v) => `<button type="button" data-v="${v}" aria-pressed="${val === v}" aria-label="${v}점">${v}</button>`).join("") +
+    (withNA ? `<button type="button" class="na" data-v="0" aria-pressed="${withNA && val === 0}">못 봄</button>` : "");
+  el.onclick = (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const v = +b.dataset.v; onPick(v);
+    el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(+x.dataset.v === v)));
+  };
+}
+function segRows(host, values, onPick, withNA) {
+  host.innerHTML = SEGS.map((s, i) => `<div class="seg"><div class="nm">${i + 1} ${s.k}<small>${s.d}</small></div><div data-i="${i}"></div></div>`).join("");
+  host.querySelectorAll("[data-i]").forEach((el) => { const i = +el.dataset.i; picker(el, values[i], (v) => onPick(i, v), withNA); });
+}
+
+/* ---------- 화면: 내 게임 ---------- */
+let mineDraft = null;
+function renderMine() {
+  const g = S.games[myGameId()];
+  if (!mineDraft) {
+    mineDraft = g ? JSON.parse(JSON.stringify(g)) : { title: "", maker: "", pitch: "", exp: "", intended: [3, 4, 2, 4, 5, 3] };
+    if (!Array.isArray(mineDraft.intended) || mineDraft.intended.length !== 6) mineDraft.intended = [3, 4, 2, 4, 5, 3];
+    $("#g-title").value = mineDraft.title || ""; $("#g-maker").value = mineDraft.maker || "";
+    $("#g-pitch").value = mineDraft.pitch || ""; $("#g-exp").value = mineDraft.exp || "";
+    segRows($("#g-curve"), mineDraft.intended, (i, v) => { mineDraft.intended[i] = v; }, false);
+  }
+  $("#g-save").textContent = g ? "수정 저장" : "등록하기";
+  $("#g-save").disabled = S.mode === "loading";
+}
+$("#g-save").onclick = async () => {
+  const title = $("#g-title").value.trim(), maker = $("#g-maker").value.trim();
+  const m = $("#g-msg"); m.className = "msg";
+  if (!title || !maker) { m.className = "msg err"; m.textContent = "게임 제목과 만든 사람을 적어 주세요."; return; }
+  const data = { title, maker, pitch: $("#g-pitch").value.trim(), exp: $("#g-exp").value.trim(), intended: mineDraft.intended.map((v) => clamp(v) || 3), at: new Date().toISOString() };
+  $("#g-save").disabled = true; m.textContent = "저장하는 중…";
+  try { await saveGame(data); m.textContent = "등록했습니다. 친구들이 피드백 목록에서 이 게임을 고를 수 있습니다."; }
+  catch (e) { m.className = "msg err"; m.textContent = errText(e); }
+  finally { $("#g-save").disabled = false; }
+};
+
+/* ---------- 화면: 피드백 ---------- */
+function sortedGames() {
+  return Object.keys(S.games).map((id) => Object.assign({ id }, S.games[id]))
+    .filter((g) => g.title).sort((a, b) => String(a.title).localeCompare(String(b.title), "ko"));
+}
+function renderRate() {
+  const list = sortedGames();
+  const host = $("#r-games");
+  if (!list.length) {
+    host.innerHTML = `<div class="empty" style="grid-column:1/-1">${S.mode === "loading" || (S.mode === "shared" && !S.loaded) ? "게임 목록을 불러오는 중입니다." : "아직 등록된 게임이 없습니다. 시연하는 친구가 \"내 게임 등록\"에서 먼저 등록해야 목록에 나타납니다."}</div>`;
+  } else {
+    const tid = myTesterId();
+    const done = (S.fb[tid] && S.fb[tid].r) || {};
+    host.innerHTML = list.map((g) => {
+      const mine = g.id === myGameId();
+      return `<button type="button" class="game" data-id="${esc(g.id)}" aria-pressed="${S.rateGame === g.id}">
+        <span class="t">${esc(g.title)}</span><span class="m">${esc(g.maker)}${mine ? " · 내 게임" : ""}</span>
+        <span class="chip ${done[g.id] ? "" : "todo"}">${done[g.id] ? "완료" : "아직"}</span></button>`;
+    }).join("");
+  }
+  host.onclick = (e) => { const b = e.target.closest(".game"); if (!b) return; openForm(b.dataset.id); };
+  const form = $("#r-form");
+  if (!S.rateGame || !S.games[S.rateGame]) { form.hidden = true; return; }
+  form.hidden = false;
+}
+function openForm(gid) {
+  S.rateGame = gid;
+  const g = S.games[gid];
+  const prev = ((S.fb[myTesterId()] || {}).r || {})[gid];
+  S.draft = prev ? JSON.parse(JSON.stringify(prev)) : { curve: [0, 0, 0, 0, 0, 0], stuck: -1, why: "", goal: 0, ctrl: 0, diff: 0, again: 0, exp: "", best: "", fix: "" };
+  if (!Array.isArray(S.draft.curve) || S.draft.curve.length !== 6) S.draft.curve = [0, 0, 0, 0, 0, 0];
+  $("#r-head").textContent = "2. 「" + g.title + "」 피드백";
+  $("#r-sub").textContent = (g.pitch ? g.pitch + " · " : "") + "만든 사람 " + g.maker + (gid === myGameId() ? " · 내 게임에는 피드백을 남기지 않는 것을 권장합니다." : "");
+  segRows($("#r-curve"), S.draft.curve, (i, v) => { S.draft.curve[i] = v; }, true);
+  $("#r-stuck").innerHTML = `<option value="-1">막힌 곳 없음</option>` + SEGS.map((s, i) => `<option value="${i}">${i + 1} ${s.k} 구간</option>`).join("");
+  $("#r-stuck").value = String(S.draft.stuck ?? -1);
+  $("#r-why").value = S.draft.why || ""; $("#r-exp").value = S.draft.exp || ""; $("#r-best").value = S.draft.best || ""; $("#r-fix").value = S.draft.fix || "";
+  picker($("#r-goal"), S.draft.goal, (v) => { S.draft.goal = v; });
+  picker($("#r-ctrl"), S.draft.ctrl, (v) => { S.draft.ctrl = v; });
+  picker($("#r-diff"), S.draft.diff, (v) => { S.draft.diff = v; });
+  picker($("#r-again"), S.draft.again, (v) => { S.draft.again = v; });
+  $("#r-save").textContent = prev ? "피드백 고치기" : "피드백 보내기";
+  $("#r-msg").textContent = "";
+  renderRate();
+  $("#r-form").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+$("#r-save").onclick = async () => {
+  const d = S.draft, m = $("#r-msg"); m.className = "msg";
+  const rated = d.curve.filter((v) => v > 0).length;
+  if (rated < 3) { m.className = "msg err"; m.textContent = "구간별 흥미를 3개 이상 골라 주세요."; return; }
+  if (!d.goal || !d.ctrl || !d.diff || !d.again) { m.className = "msg err"; m.textContent = "목표, 조작, 난이도, 다시 하기 점수를 모두 골라 주세요."; return; }
+  const resp = {
+    curve: d.curve.map((v) => clamp(v)), stuck: +$("#r-stuck").value,
+    why: $("#r-why").value.trim().slice(0, 120), goal: d.goal, ctrl: d.ctrl, diff: d.diff, again: d.again,
+    exp: $("#r-exp").value.trim().slice(0, 80), best: $("#r-best").value.trim().slice(0, 120), fix: $("#r-fix").value.trim().slice(0, 120),
+    at: new Date().toISOString()
+  };
+  $("#r-save").disabled = true; m.textContent = "보내는 중…";
+  try {
+    await saveResponse(S.rateGame, resp);
+    m.textContent = "보냈습니다. 고마워요! 다른 게임도 골라 보세요.";
+    if (S.mode === "local") { m.textContent = "저장했습니다. 다음 사람은 \"다음 테스터\"를 누르고 시작하세요."; }
+    $("#r-save").textContent = "피드백 고치기";
+  } catch (e) { m.className = "msg err"; m.textContent = errText(e); }
+  finally { $("#r-save").disabled = false; }
+};
+
+/* ---------- 화면: 결과 ---------- */
+function curveSvg(st, intended) {
+  const W = 600, H = 250, pl = 36, pr = 22, pt = 18, pb = 44;
+  const x = (i) => pl + i * (W - pl - pr) / 5, y = (v) => pt + (5 - v) / 4 * (H - pt - pb);
+  let g = "";
+  for (let v = 1; v <= 5; v++) g += `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${pl - 10}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  st.seg.forEach((s, i) => { if (s.min !== null && s.max > s.min) g += `<rect class="band" x="${x(i) - 9}" y="${y(s.max)}" width="18" height="${y(s.min) - y(s.max)}" rx="6"/>`; });
+  if (intended) {
+    g += `<polyline class="intend" points="${intended.map((v, i) => `${x(i)},${y(clamp(v) || 3)}`).join(" ")}"/>`;
+    g += intended.map((v, i) => `<circle class="intend-dot" cx="${x(i)}" cy="${y(clamp(v) || 3)}" r="4"/>`).join("");
+  }
+  const pts = st.seg.map((s, i) => (s.avg === null ? null : [x(i), y(s.avg), s.avg]));
+  let run = [];
+  const flush = () => { if (run.length > 1) g += `<polyline class="avg" points="${run.map((p) => p[0] + "," + p[1]).join(" ")}"/>`; run = []; };
+  pts.forEach((p) => { if (p) run.push(p); else flush(); }); flush();
+  pts.forEach((p) => { if (p) g += `<circle class="avg-dot" cx="${p[0]}" cy="${p[1]}" r="5.5"/><text class="val" x="${p[0]}" y="${p[1] - 11}" text-anchor="middle">${p[2].toFixed(1)}</text>`; });
+  g += SEGS.map((s, i) => `<text class="lab" x="${x(i)}" y="${H - 18}" text-anchor="middle">${i + 1} ${s.k}</text>`).join("");
+  return `<svg class="curve" viewBox="0 0 ${W} ${H}" role="img" aria-label="구간별 평균 흥미와 설계 의도 비교">${g}</svg>`;
+}
+function insightText(st, g) {
+  const lines = [];
+  let gi = -1, gv = 0;
+  st.seg.forEach((s, i) => { if (s.avg !== null && g.intended) { const d = Math.abs(s.avg - (clamp(g.intended[i]) || 3)); if (d > gv) { gv = d; gi = i; } } });
+  if (gi >= 0 && gv >= 1) {
+    const dir = st.seg[gi].avg < g.intended[gi] ? "낮게" : "높게";
+    lines.push(`의도와 가장 크게 다른 구간은 <b>${gi + 1} ${SEGS[gi].k}</b>입니다. 의도 ${g.intended[gi]}점보다 ${dir} 느꼈습니다 (평균 ${st.seg[gi].avg.toFixed(1)}).`);
+  } else if (st.n) lines.push("모든 구간이 의도한 흥미와 1점 이내로 비슷합니다. 설계한 곡선이 잘 전달되었습니다.");
+  const mi = st.stuck.indexOf(Math.max(...st.stuck));
+  if (st.stuck[mi] > 0) lines.push(`가장 많이 막힌 곳은 <b>${mi + 1} ${SEGS[mi].k}</b> 구간입니다 (${st.stuck[mi]}명).${st.stuck[mi] >= Math.max(2, Math.ceil(st.n / 2)) ? " 절반 이상이 막혔으니 설계 문제일 가능성이 높습니다." : ""}`);
+  if (g.intended) {
+    const rest = st.seg[2].avg, before = st.seg[1].avg;
+    if (rest !== null && before !== null && rest > before) lines.push("휴식 구간이 직전 상승 구간보다 더 흥미롭게 느껴졌습니다. 쉬어 가는 느낌이 약했을 수 있습니다.");
+  }
+  if (st.diff !== null) {
+    if (st.diff >= 4) lines.push("난이도를 어렵게 느낀 사람이 많습니다. 초반 구간이나 힌트를 점검해 보세요.");
+    else if (st.diff <= 2) lines.push("난이도를 쉽게 느낀 사람이 많습니다. 절정 구간의 도전을 높여 보세요.");
+  }
+  return lines;
+}
+function renderRes() {
+  const list = sortedGames();
+  const sel = $("#s-game");
+  if (!S.resGame || !S.games[S.resGame]) S.resGame = S.games[myGameId()] ? myGameId() : (list[0] && list[0].id) || null;
+  sel.innerHTML = list.length ? list.map((g) => `<option value="${esc(g.id)}">${esc(g.title)} · ${esc(g.maker)} (${responsesFor(g.id).length}명)</option>`).join("") : `<option value="">등록된 게임 없음</option>`;
+  if (S.resGame) sel.value = S.resGame;
+  const body = $("#s-body");
+  if (!S.resGame) { body.innerHTML = `<div class="card"><div class="empty">등록된 게임이 없어 보여 줄 결과가 없습니다.</div></div>`; return; }
+  const g = S.games[S.resGame], st = stats(S.resGame);
+  if (!st.n) { body.innerHTML = `<div class="card"><h2>${esc(g.title)}</h2><div class="empty">아직 받은 피드백이 없습니다. 시연이 끝나면 친구들에게 "피드백 남기기"에서 이 게임을 고르게 해 주세요.</div></div>`; return; }
+  const ins = insightText(st, g);
+  const exps = st.rs.map((r) => r.exp).filter(Boolean), bests = st.rs.map((r) => r.best).filter(Boolean), fixes = st.rs.map((r) => r.fix).filter(Boolean), whys = st.rs.filter((r) => r.why).map((r) => (r.stuck >= 0 ? `[${r.stuck + 1} ${SEGS[r.stuck].k}] ` : "") + r.why);
+  const maxStuck = Math.max(1, ...st.stuck);
+  const q = (arr) => (arr.length ? `<ul class="quotes">${arr.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : `<p class="lead" style="margin:0">아직 적은 사람이 없습니다.</p>`);
+  body.innerHTML = `
+    <div class="card">
+      <h2>${esc(g.title)}</h2>
+      <p class="lead">${esc(g.maker)} · 응답 ${st.n}명${g.exp ? " · 의도한 핵심 경험: " + esc(g.exp) : ""}</p>
+      <div class="kpis">
+        <div class="kpi"><div class="v">${f1(st.goal)}</div><div class="k">목표 이해 (5점)</div></div>
+        <div class="kpi"><div class="v">${f1(st.ctrl)}</div><div class="k">조작 편의 (5점)</div></div>
+        <div class="kpi"><div class="v">${f1(st.diff)}</div><div class="k">난이도 (3 = 적당)</div></div>
+        <div class="kpi"><div class="v">${f1(st.again)}</div><div class="k">다시 하고 싶음 (5점)</div></div>
+      </div>
+      <h3>흥미 곡선: 의도 vs 친구들</h3>
+      <div class="chart-box">${curveSvg(st, g.intended)}</div>
+      <div class="legend"><span><i style="border-color:var(--gold);border-top-style:dashed"></i>설계 의도</span><span><i style="border-color:var(--accent)"></i>친구들 평균</span><span><i style="border-color:var(--accent);opacity:.35;border-top-width:8px"></i>응답 범위</span></div>
+      ${ins.map((t) => `<div class="insight">${t}</div>`).join("")}
+      <h3>처음 막힌 곳</h3>
+      <div class="bars">${SEGS.map((s, i) => `<div class="bar"><span>${i + 1} ${s.k}</span><span class="track"><span class="fill" style="display:block;width:${(st.stuck[i] / maxStuck) * 100}%"></span></span><span class="n">${st.stuck[i]}</span></div>`).join("")}
+        <div class="bar"><span>막힌 곳 없음</span><span></span><span class="n">${st.noneStuck}</span></div></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">친구들이 느낀 경험 ${g.exp ? `<small style="font-weight:400;color:var(--muted)">(의도: ${esc(g.exp)})</small>` : ""}</h3>${q(exps)}
+      <h3>막힌 이유</h3>${q(whys)}
+      <h3>가장 재미있던 순간</h3>${q(bests)}
+      <h3>한 가지만 고친다면</h3>${q(fixes)}
+    </div>`;
+}
+$("#s-game").onchange = (e) => { S.resGame = e.target.value || null; renderRes(); };
+
+/* ---------- 화면: 전체 ---------- */
+function allRows() {
+  return sortedGames().map((g) => {
+    const st = stats(g.id);
+    const mi = st.stuck.indexOf(Math.max(...st.stuck));
+    const flag = st.n > 0 && st.stuck[mi] >= Math.max(2, Math.ceil(st.n / 2));
+    let gi = -1, gv = 0;
+    st.seg.forEach((s, i) => { if (s.avg !== null) { const d = Math.abs(s.avg - (clamp((g.intended || [])[i]) || 3)); if (d > gv) { gv = d; gi = i; } } });
+    return { g, st, flag, mi, gap: gi >= 0 ? `${gi + 1} ${SEGS[gi].k} (${gv.toFixed(1)})` : "-" };
+  });
+}
+function renderAll() {
+  const rows = allRows();
+  if (!rows.length) { $("#a-table").innerHTML = `<div class="empty">등록된 게임이 없습니다.</div>`; return; }
+  $("#a-table").innerHTML = `<table><thead><tr><th>게임</th><th>만든 사람</th><th>응답</th><th>목표 이해</th><th>조작</th><th>난이도</th><th>다시 하기</th><th>의도와 가장 다른 구간</th><th>막힘</th></tr></thead><tbody>${rows.map((r) => `<tr>
+    <td class="l">${esc(r.g.title)}</td><td>${esc(r.g.maker)}</td><td class="num">${r.st.n}</td>
+    <td class="num">${f1(r.st.goal)}</td><td class="num">${f1(r.st.ctrl)}</td><td class="num">${f1(r.st.diff)}</td><td class="num">${f1(r.st.again)}</td>
+    <td>${r.st.n ? r.gap : "-"}</td><td>${r.flag ? `<span class="pill">우선 수정 · ${r.mi + 1} ${SEGS[r.mi].k}</span>` : ""}</td></tr>`).join("")}</tbody></table>`;
+}
+function csvText() {
+  const qv = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const head = ["게임", "만든 사람", "응답 수", ...SEGS.map((s, i) => `${i + 1}${s.k} 의도`), ...SEGS.map((s, i) => `${i + 1}${s.k} 평균`), "목표 이해", "조작", "난이도", "다시 하기", ...SEGS.map((s, i) => `${i + 1}${s.k} 막힘`)];
+  const lines = allRows().map((r) => [r.g.title, r.g.maker, r.st.n, ...(r.g.intended || []).slice(0, 6), ...r.st.seg.map((s) => f1(s.avg)), f1(r.st.goal), f1(r.st.ctrl), f1(r.st.diff), f1(r.st.again), ...r.st.stuck].map(qv).join(","));
+  return "﻿" + [head.map(qv).join(","), ...lines].join("\r\n");
+}
+$("#a-copy").onclick = async () => {
+  const tsv = csvText().replace(/^﻿/, "").split("\r\n").map((l) => l.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map((c) => c.replace(/^"|"$/g, "").replace(/""/g, '"')).join("\t")).join("\n");
+  const m = $("#a-msg"); m.className = "msg";
+  try { await navigator.clipboard.writeText(tsv); m.textContent = "복사했습니다. 엑셀이나 시트에 붙여 넣으세요."; }
+  catch (e) { m.className = "msg err"; m.textContent = "복사하지 못했습니다. 표를 직접 선택해 복사해 주세요."; }
+};
+$("#a-refresh").onclick = () => refresh();
+
+/* ---------- 탭과 렌더 ---------- */
+const VIEWS = ["mine", "rate", "res", "all"];
+function setView(v) {
+  if (!VIEWS.includes(v)) v = "rate";
+  S.view = v;
+  VIEWS.forEach((k) => { $("#v-" + k).hidden = k !== v; document.querySelector(`nav.tabs [data-v="${k}"]`).setAttribute("aria-selected", String(k === v)); });
+  try { localStorage.setItem("demo-feedback-tab", v); } catch (e) { /* 무시 */ }
+  render();
+}
+document.querySelector("nav.tabs").onclick = (e) => { const b = e.target.closest("button[data-v]"); if (b) setView(b.dataset.v); };
+function renderStatus() {
+  const n = sortedGames().length;
+  const total = Object.values(S.fb).reduce((a, d) => a + Object.keys((d && d.r) || {}).length, 0);
+  const st = $("#status");
+  if (S.mode === "loading" || (S.mode === "shared" && !S.loaded)) { st.textContent = "불러오는 중…"; return; }
+  st.innerHTML = `게임 <b>${n}</b>개 · 피드백 <b>${total}</b>건${S.mode === "local" ? ` · 이 기기 모드 · 테스터 <b>${localTester}</b>번 <button class="btn ghost" id="next-tester" style="padding:4px 10px;font-size:12.5px;margin-left:6px">다음 테스터</button>` : ""}`;
+  const nt = $("#next-tester");
+  if (nt) nt.onclick = () => { localTester++; try { localStorage.setItem(LKEY + "-tester", String(localTester)); } catch (e) { /* 무시 */ } S.rateGame = null; render(); };
+}
+function render() {
+  renderStatus();
+  if (S.view === "mine") renderMine();
+  if (S.view === "rate") renderRate();
+  if (S.view === "res") renderRes();
+  if (S.view === "all") renderAll();
+}
+
+/* ---------- 시작 ---------- */
+function startLocal(reason) {
+  S.mode = "local";
+  const d = loadLocal(); S.games = d.games; S.fb = d.fb;
+  try { localTester = Math.max(1, parseInt(localStorage.getItem(LKEY + "-tester") || "1", 10) || 1); } catch (e) { localTester = 1; }
+  const n = $("#notice"); n.hidden = false;
+  n.textContent = (reason ? reason + " " : "") + "지금은 이 기기에만 저장하는 모드입니다. 시연하는 노트북 한 대에서 테스터가 차례로 입력하고, 한 사람이 끝나면 \"다음 테스터\"를 누르세요.";
+  render();
+}
+let refreshing = false, failCount = 0;
+async function refresh() {
+  if (S.mode !== "shared" || refreshing) return;
+  refreshing = true;
+  try {
+    const res = await fetch(ENDPOINT, { method: "GET", cache: "no-store" });
+    const j = await res.json();
+    if (!j || !j.ok) throw new Error("bad");
+    const games = {};
+    Object.keys(j.games || {}).forEach((id) => { const g = j.games[id]; if (g && g.title) games[id] = { title: String(g.title), maker: String(g.maker || ""), pitch: String(g.pitch || ""), exp: String(g.exp || ""), intended: (g.intended || []).slice(0, 6).map(Number) }; });
+    const fb = {};
+    (j.responses || []).forEach((r) => {
+      if (!r || !r.gameId || !r.tid) return;
+      fb[r.tid] = fb[r.tid] || { r: {} };
+      fb[r.tid].r[r.gameId] = { curve: (r.curve || []).map(Number), stuck: Number(r.stuck), why: String(r.why || ""), goal: Number(r.goal), ctrl: Number(r.ctrl), diff: Number(r.diff), again: Number(r.again), exp: String(r.exp || ""), best: String(r.best || ""), fix: String(r.fix || "") };
+    });
+    S.games = games; S.fb = fb; failCount = 0;
+    const n = $("#notice"); if (n.dataset.kind === "net") { n.hidden = true; n.dataset.kind = ""; }
+    S.loaded = true;
+    render();
+  } catch (e) {
+    failCount++;
+    const n = $("#notice"); n.hidden = false; n.dataset.kind = "net";
+    n.textContent = "응답을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요. 자동으로 다시 시도합니다.";
+  } finally { refreshing = false; }
+}
+(function boot() {
+  let initTab = "rate";
+  try { initTab = localStorage.getItem("demo-feedback-tab") || "rate"; } catch (e) { /* 무시 */ }
+  setView(initTab);
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(ENDPOINT)) { startLocal("저장 주소가 설정되지 않았습니다."); return; }
+  S.mode = "shared";
+  render();
+  refresh();
+  setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 20000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+})();
+</script>
+
+</body>
+</html>
